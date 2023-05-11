@@ -1,0 +1,17 @@
+[package]
+name = "server"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio = { version = "1.27", features = ["full"] }
+axum = { version = "0.6", features = ["macros", "ws"] }
+tower = { version = "0.4", features = ["timeout", "load-shed", "limit"] }
+tower-http = { version = "0.4", features = ["fs"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+yew = { version = "0.20", features = ["ssr"] }
+
+frontend = { path = "../frontend/" }

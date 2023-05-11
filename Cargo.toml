@@ -1,0 +1,12 @@
+[workspace]
+members = [
+    "server",
+    "frontend"
+]
+
+default-members = [
+    "server"
+]
+
+[profile.release]
+lto = true

@@ -1,0 +1,7 @@
+[build]
+target = "frontend/index.html"
+release = true
+# Maybe put result in `target/` so `cargo clean` can clear it up 
+dist = "dist"
+# Assets are loaded from `/static/`
+public_url = "/static/"
