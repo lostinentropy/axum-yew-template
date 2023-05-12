@@ -1,6 +1,15 @@
-use axum::{extract::State, response::Html, routing::get, Router};
+use axum::{
+    body::{self, Full},
+    extract::{Path, State},
+    http::{header, HeaderValue, StatusCode},
+    response::{Html, IntoResponse, Response},
+    routing::get,
+    Router,
+};
+
 use std::{net::SocketAddr, ops::Deref, str::FromStr, sync::Arc};
-use tower_http::services::ServeDir;
+
+use include_dir::{include_dir, Dir};
 
 use yew::ServerRenderer;
 
@@ -9,6 +18,7 @@ use tracing_subscriber::{filter::Targets, layer::SubscriberExt, util::Subscriber
 
 use frontend::App;
 
+static DIST_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/../dist");
 const INDEX_SOURCE: &str = include_str!("../../dist/index.html");
 
 #[derive(Clone, Debug)]
@@ -44,7 +54,7 @@ async fn main() {
 
     let app = Router::new()
         .route("/", get(root_get))
-        .nest_service("/static", ServeDir::new("dist"))
+        .route("/static/*file", get(static_get))
         .with_state(app_state);
     let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
 
@@ -53,6 +63,23 @@ async fn main() {
         .serve(app.into_make_service())
         .await
         .expect("Failed to run server")
+}
+
+#[tracing::instrument]
+async fn static_get(Path(path): Path<String>) -> Response {
+    let mime_type = mime_guess::from_path(&path).first_or_text_plain();
+
+    match DIST_DIR.get_file(&path) {
+        None => StatusCode::NOT_FOUND.into_response(),
+        Some(file) => Response::builder()
+            .status(StatusCode::OK)
+            .header(
+                header::CONTENT_TYPE,
+                HeaderValue::from_str(mime_type.as_ref()).unwrap(),
+            )
+            .body(body::boxed(Full::from(file.contents())))
+            .unwrap(),
+    }
 }
 
 #[tracing::instrument]
