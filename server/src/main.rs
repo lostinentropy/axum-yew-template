@@ -1,7 +1,6 @@
 use axum::{
-    body::{self, Full},
     extract::{Path, State},
-    http::{header, HeaderValue, StatusCode},
+    http::{header, StatusCode},
     response::{Html, IntoResponse, Response},
     routing::get,
     Router,
@@ -29,7 +28,9 @@ struct AppState {
 
 impl Default for AppState {
     fn default() -> Self {
-        let (index_html_before, index_html_after) = INDEX_SOURCE.split_once("<body>").unwrap();
+        let (index_html_before, index_html_after) = INDEX_SOURCE
+            .split_once("<body>")
+            .expect("Invalid index.html");
 
         AppState {
             index_html_before: Arc::new(index_html_before.to_owned()),
@@ -71,14 +72,11 @@ async fn static_get(Path(path): Path<String>) -> Response {
 
     match DIST_DIR.get_file(&path) {
         None => StatusCode::NOT_FOUND.into_response(),
-        Some(file) => Response::builder()
-            .status(StatusCode::OK)
-            .header(
-                header::CONTENT_TYPE,
-                HeaderValue::from_str(mime_type.as_ref()).unwrap(),
-            )
-            .body(body::boxed(Full::from(file.contents())))
-            .unwrap(),
+        Some(file) => (
+            [(header::CONTENT_TYPE, mime_type.as_ref())],
+            file.contents(),
+        )
+            .into_response(),
     }
 }
 
