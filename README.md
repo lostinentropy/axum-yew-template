@@ -4,9 +4,9 @@ This is a template for an axum based webserver running a Yew-based webapp with s
 
 To run this project run
 ```console
-> just run
+just run
 ```
 or alternatively
 ```console
-> trunk build && cargo run
+trunk build && cargo run
 ```
