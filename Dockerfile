@@ -1,29 +1,32 @@
-FROM rust:latest AS builder
+FROM debian:stable AS builder
+
+RUN apt-get update
+
+RUN apt-get install -y \
+    build-essential \
+    curl
+
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+
+ENV PATH="/root/.cargo/bin:${PATH}"
 
 RUN rustup target add wasm32-unknown-unknown
-RUN rustup target add x86_64-unknown-linux-musl
-RUN cargo install --locked trunk
-# ENV PATH="$PATH:/root/.cargo/bin"
+RUN cargo install trunk
 
 WORKDIR /build-folder
 ADD . ./
 RUN trunk build --release \
-    && cargo build --release --target x86_64-unknown-linux-musl
+    && cargo build --release
 
-FROM alpine:latest
-
-RUN apk update \
-    && apk add --no-cache libgcc \
-    && rm -rf /var/cache/apk/*
+FROM debian:stable-slim
  
 COPY --from=builder /build-folder/dist/* /runtime/dist/
-COPY --from=builder /build-folder/target/x86_64-unknown-linux-musl/server /runtime/
+COPY --from=builder /build-folder/target/release/server /runtime/server
 
-RUN addgroup -S shrimp \
-    && adduser -S -g shrimp shrimp \
-    && chown -R shrimp:shrimp /runtime
+RUN groupadd -g 999 appuser && \
+    useradd -r -u 999 -g appuser appuser
+USER appuser
 
-USER shrimp
 WORKDIR /runtime
 EXPOSE 3000
 CMD ["./server"]
