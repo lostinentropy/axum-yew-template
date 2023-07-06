@@ -51,6 +51,11 @@ async fn main() {
 
     tracing::info!("starting up");
 
+    let quit_sig = async {
+        _ = tokio::signal::ctrl_c().await;
+        tracing::warn!("Initiating graceful shutdown");
+    };
+
     let app_state = AppState::default();
 
     let app = Router::new()
@@ -62,6 +67,7 @@ async fn main() {
     tracing::info!("listening on {}", addr);
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
+        .with_graceful_shutdown(quit_sig)
         .await
         .expect("Failed to run server")
 }
